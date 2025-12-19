@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🎯 Add New Goal"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="20dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Goal Title"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/et_goal_title"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:hint="e.g., Complete Java course"
+        android:inputType="textCapSentences"
+        android:background="@drawable/edittext_modern"
+        android:padding="16dp"
+        android:textSize="15sp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_hint"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Description (Optional)"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/et_goal_description"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:hint="Add more details about your goal..."
+        android:gravity="top|start"
+        android:inputType="textMultiLine|textCapSentences"
+        android:background="@drawable/edittext_modern"
+        android:padding="16dp"
+        android:textSize="15sp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_hint" />
+
+</LinearLayout>

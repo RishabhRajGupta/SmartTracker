@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 Colors -->
+    <color name="md_theme_primary">#6366F1</color>
+    <color name="md_theme_primary_dark">#4F46E5</color>
+    <color name="md_theme_secondary">#EC4899</color>
+    <color name="md_theme_tertiary">#8B5CF6</color>
+    <color name="md_theme_accent">#10B981</color>
+
+    <!-- Background colors -->
+    <color name="background_light">#F8FAFC</color>
+    <color name="background_card">#FFFFFF</color>
+    <color name="background_dark">#1E293B</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_hint">#94A3B8</color>
+
+    <!-- Status colors -->
+    <color name="success">#10B981</color>
+    <color name="warning">#F59E0B</color>
+    <color name="error">#EF4444</color>
+    <color name="info">#3B82F6</color>
+
+    <!-- Gradient colors -->
+    <color name="gradient_start">#6366F1</color>
+    <color name="gradient_end">#8B5CF6</color>
+
+    <!-- Standard colors -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Legacy support -->
+    <color name="primary">@color/md_theme_primary</color>
+    <color name="primary_dark">@color/md_theme_primary_dark</color>
+    <color name="accent">@color/md_theme_secondary</color>
+</resources>
