@@ -16,12 +16,13 @@ public class GoalsAdapter extends RecyclerView.Adapter<GoalsAdapter.GoalViewHold
     private OnGoalCheckedListener checkedListener;
     private OnGoalDeleteListener deleteListener;
 
+    // Listener interfaces
     public interface OnGoalCheckedListener {
-        void onChecked(int goalId, boolean checked);
+        void onChecked(Goal goal, boolean isChecked);
     }
 
     public interface OnGoalDeleteListener {
-        void onDelete(int goalId);
+        void onDelete(long goalId);
     }
 
     public GoalsAdapter(List<Goal> goals, OnGoalCheckedListener checkedListener, OnGoalDeleteListener deleteListener) {
@@ -61,14 +62,18 @@ public class GoalsAdapter extends RecyclerView.Adapter<GoalsAdapter.GoalViewHold
             btnDelete = itemView.findViewById(R.id.btn_delete_goal);
         }
 
-        public void bind(Goal goal) {
+        public void bind(final Goal goal) {
             tvTitle.setText(goal.getTitle());
             tvDescription.setText(goal.getDescription());
-            cbGoal.setChecked(goal.isCompletedToday());
 
+            // Set initial checked state without triggering listener
+            cbGoal.setOnCheckedChangeListener(null);
+            cbGoal.setChecked(goal.isCompleted());
+
+            // Set the listener to handle user interaction
             cbGoal.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (checkedListener != null) {
-                    checkedListener.onChecked(goal.getId(), isChecked);
+                    checkedListener.onChecked(goal, isChecked);
                 }
             });
 

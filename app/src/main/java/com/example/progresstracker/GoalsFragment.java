@@ -1,8 +1,8 @@
 package com.example.progresstracker;
 
 import android.app.AlertDialog;
-import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,33 +13,38 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.progresstracker.network.ApiClient;
+import com.example.progresstracker.network.GoalApiService;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import java.text.SimpleDateFormat;
+
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class GoalsFragment extends Fragment {
+
+    private static final String TAG = "GoalsFragment";
 
     private RecyclerView rvGoals;
     private FloatingActionButton fabAddGoal;
     private GoalsAdapter adapter;
-    private DatabaseHelper dbHelper;
     private List<Goal> goalsList;
-    private String currentDate;
+    private GoalApiService apiService;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_goals, container, false);
 
-        dbHelper = new DatabaseHelper(getContext());
-        currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        apiService = ApiClient.getClient().create(GoalApiService.class);
         goalsList = new ArrayList<>();
 
         initViews(view);
-        loadGoals();
+        loadGoalsFromBackend();
 
         return view;
     }
@@ -55,20 +60,26 @@ public class GoalsFragment extends Fragment {
         fabAddGoal.setOnClickListener(v -> showAddGoalDialog());
     }
 
-    private void loadGoals() {
-        goalsList.clear();
-        Cursor cursor = dbHelper.getAllGoals();
+    private void loadGoalsFromBackend() {
+        apiService.getAllGoals().enqueue(new Callback<List<Goal>>() {
+            @Override
+            public void onResponse(Call<List<Goal>> call, Response<List<Goal>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    goalsList.clear();
+                    goalsList.addAll(response.body());
+                    adapter.notifyDataSetChanged();
+                } else {
+                    Log.e(TAG, "Failed to load goals. Code: " + response.code());
+                    Toast.makeText(getContext(), "Failed to load goals", Toast.LENGTH_SHORT).show();
+                }
+            }
 
-        while (cursor.moveToNext()) {
-            int id = cursor.getInt(cursor.getColumnIndex("id"));
-            String title = cursor.getString(cursor.getColumnIndex("title"));
-            String description = cursor.getString(cursor.getColumnIndex("description"));
-            boolean completedToday = dbHelper.isGoalCompletedToday(id, currentDate);
-
-            goalsList.add(new Goal(id, title, description, completedToday));
-        }
-        cursor.close();
-        adapter.notifyDataSetChanged();
+            @Override
+            public void onFailure(Call<List<Goal>> call, Throwable t) {
+                Log.e(TAG, "Error loading goals", t);
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showAddGoalDialog() {
@@ -84,11 +95,8 @@ public class GoalsFragment extends Fragment {
                     String description = etDescription.getText().toString().trim();
 
                     if (!title.isEmpty()) {
-                        long id = dbHelper.addGoal(title, description);
-                        if (id != -1) {
-                            Toast.makeText(getContext(), "Goal added!", Toast.LENGTH_SHORT).show();
-                            loadGoals();
-                        }
+                        Goal newGoal = new Goal(title, description);
+                        createGoalOnBackend(newGoal);
                     } else {
                         Toast.makeText(getContext(), "Please enter a goal title", Toast.LENGTH_SHORT).show();
                     }
@@ -97,22 +105,88 @@ public class GoalsFragment extends Fragment {
                 .show();
     }
 
-    private void onGoalChecked(int goalId, boolean checked) {
-        dbHelper.updateGoalProgress(goalId, currentDate, checked);
-        Toast.makeText(getContext(), checked ? "Goal completed! ✓" : "Goal unchecked", Toast.LENGTH_SHORT).show();
+    private void createGoalOnBackend(Goal goal) {
+        apiService.createGoal(goal).enqueue(new Callback<Goal>() {
+            @Override
+            public void onResponse(Call<Goal> call, Response<Goal> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Goal added!", Toast.LENGTH_SHORT).show();
+                    loadGoalsFromBackend();
+                } else {
+                    // Improved error logging
+                    Log.e(TAG, "Failed to add goal. Response code: " + response.code());
+                    try {
+                        Log.e(TAG, "Error body: " + response.errorBody().string());
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing error body", e);
+                    }
+                    Toast.makeText(getContext(), "Failed to add goal", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Goal> call, Throwable t) {
+                // Improved error logging
+                Log.e(TAG, "Error adding goal", t);
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    private void onGoalDelete(int goalId) {
+    private void onGoalChecked(Goal goal, boolean isChecked) {
+        goal.setCompleted(isChecked);
+        updateGoalOnBackend(goal);
+    }
+
+    private void updateGoalOnBackend(Goal goal) {
+        apiService.updateGoalStatus(goal.getId(), goal).enqueue(new Callback<Goal>() {
+            @Override
+            public void onResponse(Call<Goal> call, Response<Goal> response) {
+                if (!response.isSuccessful()) {
+                    goal.setCompleted(!goal.isCompleted());
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(), "Failed to update goal status", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Goal> call, Throwable t) {
+                goal.setCompleted(!goal.isCompleted());
+                adapter.notifyDataSetChanged();
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void onGoalDelete(long goalId) {
         new AlertDialog.Builder(getContext())
                 .setTitle("Delete Goal")
                 .setMessage("Are you sure you want to delete this goal?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    if (dbHelper.deleteGoal(goalId)) {
-                        Toast.makeText(getContext(), "Goal deleted", Toast.LENGTH_SHORT).show();
-                        loadGoals();
-                    }
+                    deleteGoalFromBackend(goalId);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void deleteGoalFromBackend(long goalId) {
+        apiService.deleteGoal(goalId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Goal deleted", Toast.LENGTH_SHORT).show();
+                    loadGoalsFromBackend();
+                } else {
+                    Log.e(TAG, "Failed to delete goal. Code: " + response.code());
+                    Toast.makeText(getContext(), "Failed to delete goal", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e(TAG, "Error deleting goal", t);
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

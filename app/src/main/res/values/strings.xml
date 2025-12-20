@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Progress Tracker</string>
+    <string name="app_name">SmartTracker</string>
     <string name="daily">Daily</string>
     <string name="goals">Goals</string>
     <string name="calendar">Calendar</string>
